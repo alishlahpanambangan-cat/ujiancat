@@ -1,17 +1,62 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Login Ujian Online</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login Siswa</title>
+
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <script src="js/firebase.js"></script>
-  <script src="js/auth.js"></script>
+
+  <script>
+    // Konfigurasi Firebase kamu
+    const firebaseConfig = {
+      apiKey: "AIzaSyBQ7qa44-jAufeNJepRmLfOgCluZAUutic",
+      authDomain: "ujian-online-e37f8.firebaseapp.com",
+      databaseURL: "https://ujian-online-e37f8-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "ujian-online-e37f8",
+      storageBucket: "ujian-online-e37f8.firebasestorage.app",
+      messagingSenderId: "588456104713",
+      appId: "1:588456104713:web:a49e73fe00ef01e6a6b9d8",
+      measurementId: "G-Z8FSQQ069Q"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Fungsi login
+    function loginSiswa() {
+      const nisn = document.getElementById("nisn").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (nisn === "" || password === "") {
+        alert("Masukkan NISN dan Password!");
+        return;
+      }
+
+      db.ref("users/siswa/" + nisn).once("value", (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          if (data.password === password) {
+            alert("Login berhasil, selamat datang " + data.nama);
+            // Arahkan ke halaman ujian
+            window.location.href = "ujian.html?nisn=" + nisn;
+          } else {
+            alert("Password salah!");
+          }
+        } else {
+          alert("Akun dengan NISN tersebut tidak ditemukan!");
+        }
+      });
+    }
+  </script>
 </head>
+
 <body>
-  <h2>Login Ujian Online</h2>
-  <input type="text" id="userId" placeholder="Masukkan NISN/NUPTK">
-  <input type="password" id="password" placeholder="Masukkan Password">
-  <button onclick="login()">Login</button>
+  <h2>Login Siswa</h2>
+  <input type="text" id="nisn" placeholder="Masukkan NISN"><br><br>
+  <input type="password" id="password" placeholder="Masukkan Password"><br><br>
+  <button onclick="loginSiswa()">Login</button><br><br>
+  <a href="index.html">Kembali ke Beranda</a>
 </body>
 </html>
