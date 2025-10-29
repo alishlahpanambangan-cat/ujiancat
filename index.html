@@ -1,14 +1,143 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Dashboard Ujian Online</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login Ujian CAT - MTs Al Ishlah Panambangan</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(135deg, #1e88e5, #42a5f5);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    h1 {
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .login-box {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 30px;
+      border-radius: 15px;
+      backdrop-filter: blur(8px);
+      width: 300px;
+      text-align: center;
+    }
+    input {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 8px;
+      text-align: center;
+    }
+    button {
+      background: #fff;
+      color: #1976d2;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #bbdefb;
+    }
+    footer {
+      position: fixed;
+      bottom: 10px;
+      font-size: 12px;
+      color: #e3f2fd;
+    }
+  </style>
+
+  <script>
+    // Konfigurasi Firebase kamu
+    const firebaseConfig = {
+      apiKey: "AIzaSyBQ7qa44-jAufeNJepRmLfOgCluZAUutic",
+      authDomain: "ujian-online-e37f8.firebaseapp.com",
+      databaseURL: "https://ujian-online-e37f8-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "ujian-online-e37f8",
+      storageBucket: "ujian-online-e37f8.firebasestorage.app",
+      messagingSenderId: "588456104713",
+      appId: "1:588456104713:web:a49e73fe00ef01e6a6b9d8",
+      measurementId: "G-Z8FSQQ069Q"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Fungsi login universal (guru/siswa)
+    async function loginUser() {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (username === "" || password === "") {
+        alert("Masukkan Username dan Password!");
+        return;
+      }
+
+      // Cek di tabel siswa dulu
+      const siswaRef = db.ref("siswa/" + username);
+      const guruRef = db.ref("guru/" + username);
+
+      let userData = null;
+      let role = "";
+
+      await siswaRef.get().then(snapshot => {
+        if (snapshot.exists()) {
+          userData = snapshot.val();
+          role = "siswa";
+        }
+      });
+
+      if (!userData) {
+        await guruRef.get().then(snapshot => {
+          if (snapshot.exists()) {
+            userData = snapshot.val();
+            role = "guru";
+          }
+        });
+      }
+
+      if (!userData) {
+        alert("Akun tidak ditemukan!");
+        return;
+      }
+
+      if (userData.password === password) {
+        alert("Selamat datang, " + userData.nama + " (" + role + ")");
+        if (role === "guru") {
+          window.location.href = "dashboard_guru.html";
+        } else {
+          window.location.href = "ujian.html?nisn=" + username;
+        }
+      } else {
+        alert("Password salah!");
+      }
+    }
+  </script>
 </head>
+
 <body>
-  <h1>Selamat Datang di Ujian Online</h1>
-  <ul>
-    <li><a href="login.html">Login Siswa/Guru</a></li>
-    <li><a href="remidial.html">Daftar Remidial</a></li>
-  </ul>
+  <div class="login-box">
+    <h1>Selamat Datang di<br>UJIAN CAT<br>MTs Al Ishlah Panambangan</h1>
+
+    <input type="text" id="username" placeholder="NISN (Siswa) / NUPTK (Guru)" />
+    <input type="password" id="password" placeholder="Password" />
+    <button onclick="loginUser()">Login</button>
+  </div>
+
+  <footer>© 2025 MTs Al Ishlah Panambangan</footer>
 </body>
 </html>
