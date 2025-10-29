@@ -87,26 +87,30 @@
         return;
       }
 
-      // Cek di tabel siswa dulu
-      const siswaRef = db.ref("siswa/" + username);
-      const guruRef = db.ref("guru/" + username);
-
-      let userData = null;
-      let role = "";
-
-      await siswaRef.get().then(snapshot => {
-        if (snapshot.exists()) {
-          userData = snapshot.val();
-          role = "siswa";
+     // Cek di tabel guru dulu
+    db.ref("guru").once("value").then(snapshot => {
+      let found = false;
+      snapshot.forEach(data => {
+        const guru = data.val();
+        if ((guru.nuptk === username || guru.username === username) && guru.password === password) {
+          found = true;
+          alert("Selamat datang, " + guru.nama);
+          window.location.href = "dashboard_guru.html";
         }
       });
 
-      if (!userData) {
-        await guruRef.get().then(snapshot => {
-          if (snapshot.exists()) {
-            userData = snapshot.val();
-            role = "guru";
-          }
+      // Kalau tidak ditemukan di guru → cek siswa
+      if (!found) {
+        db.ref("siswa").once("value").then(snap2 => {
+          snap2.forEach(data => {
+            const s = data.val();
+            if ((s.nisn === username || s.username === username) && s.password === password) {
+              found = true;
+              alert("Selamat datang, " + s.nama);
+              window.location.href = "dashboard_siswa.html";
+            }
+          });
+          if (!found) alert("Username atau password salah!");
         });
       }
 
