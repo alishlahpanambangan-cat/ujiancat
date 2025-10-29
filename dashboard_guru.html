@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Guru - Ujian CAT</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      margin: 0;
+      background-color: #f5f8ff;
+    }
+    header {
+      background: linear-gradient(90deg, #1e88e5, #42a5f5);
+      color: white;
+      padding: 15px 25px;
+      text-align: center;
+    }
+    nav {
+      display: flex;
+      justify-content: center;
+      background: #e3f2fd;
+      padding: 10px;
+      gap: 20px;
+    }
+    nav button {
+      background: #1976d2;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    nav button:hover {
+      background: #1565c0;
+    }
+    .container {
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    textarea, input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+    }
+    button.action {
+      background: #1e88e5;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button.action:hover {
+      background: #0d47a1;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    th {
+      background: #e3f2fd;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Dashboard Guru</h1>
+    <p>Ujian CAT MTs Al Ishlah Panambangan</p>
+  </header>
+
+  <nav>
+    <button onclick="showPage('buat-soal')">📘 Buat Soal</button>
+    <button onclick="showPage('ambil-form')">📝 Ambil dari Google Form</button>
+    <button onclick="showPage('penilaian')">✅ Penilaian Jawaban</button>
+  </nav>
+
+  <div class="container">
+
+    <!-- ================= HALAMAN BUAT SOAL ================= -->
+    <div id="buat-soal" class="card">
+      <h2>Buat Soal Manual</h2>
+      <label>Soal:</label>
+      <textarea id="soalText" placeholder="Tulis soal di sini..."></textarea>
+      <label>Pilihan Jawaban (pisahkan dengan koma):</label>
+      <input type="text" id="opsiText" placeholder="contoh: A. Ya, B. Tidak, C. Mungkin">
+      <label>Kunci Jawaban:</label>
+      <input type="text" id="kunciText" placeholder="contoh: A">
+      <button class="action" onclick="simpanSoal()">💾 Simpan Soal</button>
+
+      <h3>Daftar Soal:</h3>
+      <table id="tabelSoal">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Soal</th>
+            <th>Kunci</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- ================= HALAMAN AMBIL GOOGLE FORM ================= -->
+    <div id="ambil-form" class="card" style="display:none;">
+      <h2>Ambil Soal dari Google Form</h2>
+      <label>Masukkan Link Google Form:</label>
+      <input type="text" id="formLink" placeholder="https://docs.google.com/forms/...">
+      <button class="action" onclick="simpanLink()">🔗 Simpan Link</button>
+
+      <div id="formSaved" style="margin-top:10px;"></div>
+    </div>
+
+    <!-- ================= HALAMAN PENILAIAN ================= -->
+    <div id="penilaian" class="card" style="display:none;">
+      <h2>Penilaian Jawaban Siswa</h2>
+      <p>Berikut daftar siswa yang sudah mengerjakan:</p>
+      <table id="tabelNilai">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Nama</th>
+            <th>Skor</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <script>
+    // Konfigurasi Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBQ7qa44-jAufeNJepRmLfOgCluZAUutic",
+      authDomain: "ujian-online-e37f8.firebaseapp.com",
+      databaseURL: "https://ujian-online-e37f8-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "ujian-online-e37f8",
+      storageBucket: "ujian-online-e37f8.firebasestorage.app",
+      messagingSenderId: "588456104713",
+      appId: "1:588456104713:web:a49e73fe00ef01e6a6b9d8",
+      measurementId: "G-Z8FSQQ069Q"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Fungsi navigasi antar halaman
+    function showPage(id) {
+      document.querySelectorAll(".card").forEach(card => card.style.display = "none");
+      document.getElementById(id).style.display = "block";
+    }
+
+    // ==================== SIMPAN SOAL ====================
+    function simpanSoal() {
+      const soal = document.getElementById("soalText").value.trim();
+      const opsi = document.getElementById("opsiText").value.trim();
+      const kunci = document.getElementById("kunciText").value.trim();
+
+      if (soal === "" || kunci === "") {
+        alert("Isi soal dan kunci jawabannya!");
+        return;
+      }
+
+      const newSoalRef = db.ref("soal").push();
+      newSoalRef.set({
+        soal: soal,
+        opsi: opsi,
+        kunci: kunci
+      });
+
+      alert("Soal berhasil disimpan!");
+      document.getElementById("soalText").value = "";
+      document.getElementById("opsiText").value = "";
+      document.getElementById("kunciText").value = "";
+
+      loadSoal();
+    }
+
+    // ==================== MUAT DAFTAR SOAL ====================
+    function loadSoal() {
+      const tbody = document.querySelector("#tabelSoal tbody");
+      tbody.innerHTML = "";
+
+      db.ref("soal").once("value").then(snapshot => {
+        let no = 1;
+        snapshot.forEach(data => {
+          const s = data.val();
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${no++}</td><td>${s.soal}</td><td>${s.kunci}</td>`;
+          tbody.appendChild(tr);
+        });
+      });
+    }
+
+    // ==================== SIMPAN LINK GOOGLE FORM ====================
+    function simpanLink() {
+      const link = document.getElementById("formLink").value.trim();
+      if (link === "") {
+        alert("Masukkan link Google Form terlebih dahulu!");
+        return;
+      }
+
+      db.ref("google_form").set({ link: link });
+      document.getElementById("formSaved").innerHTML = `<p>✅ Link disimpan:<br><a href="${link}" target="_blank">${link}</a></p>`;
+      alert("Link Google Form berhasil disimpan!");
+    }
+
+    // ==================== MUAT PENILAIAN SISWA ====================
+    function loadNilai() {
+      const tbody = document.querySelector("#tabelNilai tbody");
+      tbody.innerHTML = "";
+      db.ref("nilai").once("value").then(snapshot => {
+        let no = 1;
+        snapshot.forEach(data => {
+          const n = data.val();
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${no++}</td><td>${n.nama}</td><td>${n.skor}</td>`;
+          tbody.appendChild(tr);
+        });
+      });
+    }
+
+    // Jalankan saat halaman dimuat
+    window.onload = () => {
+      loadSoal();
+      loadNilai();
+    };
+  </script>
+</body>
+</html>
